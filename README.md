@@ -1,12 +1,21 @@
-# mcp-wechat-server
+# 微信 MCP · 图片处理与监听集成
 
-基于 MCP（Model Context Protocol）的微信机器人服务器，让任何 AI Agent 都能收发微信消息。
+基于 [Howardzhangdqs/mcp-wechat-server](https://github.com/Howardzhangdqs/mcp-wechat-server) 的个人扩展版本，在原有微信消息工具上增加图片下载与解密能力，并提供连接 OpenClaw 的常驻监听示例。
 
-![npm version](https://img.shields.io/npm/v/mcp-wechat-server)
+## 与上游的关系
+
+扫码登录、文本收发、长轮询、打字状态和登录状态持久化来自上游。本仓库新增的内容集中在以下两部分：
+
+| 扩展 | 内容 | 代码入口 |
+| --- | --- | --- |
+| 图片处理 | 暴露消息中的媒体信息；新增 `download_image` 工具，下载、解密图片并返回类型、大小与内容，可选择保存到本地 | [media.ts](src/tools/media.ts)、[工具注册](src/index.ts) |
+| 监听示例 | 长轮询微信消息，支持唤醒 / 休眠词，将文字与图片问题转发到 OpenClaw，并提供 macOS launchd 配置示例 | [示例说明](examples/wechat-claw-daemon/README.md) |
+
+技术栈：TypeScript · Bun · MCP SDK · Zod。
 
 ## 功能
 
-- **6 个 MCP 工具**：登录、消息轮询、文本发送、打字状态
+- **7 个 MCP 工具**：登录、消息轮询、文本发送、打字状态、图片下载与解密
 - **扫码登录**：生成终端文本二维码、PNG 图片、URL 链接三种方式
 - **长轮询监听**：阻塞等待新消息，最长可等待 7 天
 - **打字状态**：Agent 处理消息时自动显示"对方正在输入..."
@@ -15,16 +24,25 @@
 
 ## 快速开始
 
-### Claude Desktop
+使用本仓库源码运行扩展版本：
 
-在 `claude_desktop_config.json` 中添加：
+```bash
+git clone https://github.com/miyin-derick/mcp-wechat-server-integrated.git
+cd mcp-wechat-server-integrated
+bun install
+bun run start
+```
+
+### Claude Desktop / 支持 `mcpServers` 的客户端
+
+将 `/absolute/path/to/mcp-wechat-server-integrated` 替换为本地仓库的绝对路径；确保客户端能找到 `bun`，必要时也为它填写绝对路径。
 
 ```json
 {
   "mcpServers": {
     "wechat": {
-      "command": "bunx",
-      "args": ["mcp-wechat-server"]
+      "command": "bun",
+      "args": ["run", "/absolute/path/to/mcp-wechat-server-integrated/src/index.ts"]
     }
   }
 }
@@ -32,36 +50,31 @@
 
 ### OpenCode
 
-在 `opencode.json` 中添加：
-
 ```json
 {
   "mcp": {
     "wechat": {
       "type": "local",
-      "command": ["bunx", "mcp-wechat-server"],
+      "command": ["bun", "run", "/absolute/path/to/mcp-wechat-server-integrated/src/index.ts"],
       "enabled": true
     }
   }
 }
 ```
 
-### Cursor / 其他 MCP 客户端
+原 README 中的 `bunx mcp-wechat-server` 安装的是上游 npm 包。要使用本仓库的图片处理扩展，请采用上面的本地源码配置。
 
-```json
-{
-  "command": "bunx",
-  "args": ["mcp-wechat-server"]
-}
-```
+### 常驻监听示例
 
-> `bunx` 会自动从 npm 下载并运行，无需手动安装。
+连接 OpenClaw、配置唤醒词和 macOS launchd 的步骤见 [WeChat Claw Daemon](examples/wechat-claw-daemon/README.md)。这是需要自行配置的集成示例，依赖本地 OpenClaw 与有效的微信登录状态。
 
 ## 环境要求
 
 - [Bun](https://bun.sh/) >= 1.0.0
 
 ## 使用方法
+
+以下基础登录和消息操作沿用上游流程，截图来自上游项目。
 
 ### 1. 扫码登录
 
@@ -104,6 +117,7 @@ Agent 调用 `check_qrcode_status` 确认登录状态。
 | `get_messages` | 拉取新消息（`wait=true` 阻塞等待直到收到消息） |
 | `send_text_message` | 发送文本消息 |
 | `send_typing` | 发送或取消"正在输入"状态 |
+| `download_image` | 下载并解密图片，可选择保存到本地 |
 
 ## 数据存储
 
@@ -119,12 +133,11 @@ Agent 调用 `check_qrcode_status` 确认登录状态。
 ## 本地开发
 
 ```bash
-git clone https://github.com/Howardzhangdqs/mcp-wechat-server.git
-cd mcp-wechat-server
-bun install
 bun run dev
 ```
 
-## 许可证
+## 来源与许可
 
-MIT
+上游项目：[Howardzhangdqs/mcp-wechat-server](https://github.com/Howardzhangdqs/mcp-wechat-server)。本仓库保留上游提交历史；图片处理和监听示例的扩展记录可在提交历史中查看。
+
+许可证沿用上游声明：MIT。
